@@ -1,9 +1,10 @@
 ---
 title: "Assignment 1: Decision trees and cost-effectiveness"
-author: "YOUR NAME HERE"
+author: "Huzbah Jagirdar"
 date: today
 format:
     html:
+      embed-resources: true
       toc: true
       embed-resources: true
 editor: visual
@@ -97,11 +98,12 @@ DT1_evaluation <- DT1$evaluate() #calculate it
 DT1_evaluation |> flextable()
 ```
 
-In the code chunk below, using the variables defined in the last code chunk (e.g., `p_stent_diet`), calculate the expected utility and expected cost of the diet arm without using the `rdecision` package (simple summing/multiplying).
+mIn the code chunk below, using the variables defined in the last code chunk (e.g., `p_stent_diet`), calculate the expected utility and expected cost of the diet arm without using the `rdecision` package (simple summing/multiplying).
 
 ```{r}
-expected_cost_diet <- NA
-expected_utility_diet <- NA
+expected_cost_diet <- (c_diet + c_stent)*p_stent_diet + c_diet*(1-p_stent_diet)
+expected_utility_diet <- u_stent*p_stent_diet + 1*(1-p_stent_diet)
+
 
 #Print the values
 expected_cost_diet
@@ -131,7 +133,7 @@ t_params |>
 
 In the code chunk below, build the model using the rdecision package with the 'base_case' value for each parameter (we won't be using the 'lower_bound' or 'upper_bound' columns for anything in this problem set).
 
-Your model should start with a decision mode with three options:
+Your model should start with a decision node with three options:
 
 -   **OTSc first:** use OTS clip for first line therapy; if a rebleed occurs use a standard clip for second line therapy
 
@@ -178,19 +180,46 @@ params <- as.list(t_params$base_case)
 names(params) <- t_params$name
 
 #Create root decision node
-decision_node <- NA
+decision_node <- DecisionNode$new("OTS_first or ST_first or ST_only")
+
 
 # Create chance nodes for whether first-line therapy was successful in each scenario
-
+chance_node_OTS_first <- ChanceNode$new("First-line therapy sucess?")
+chance_node_ST_first <- ChanceNode$new("First-line therapy sucess?")
+chance_node_ST_only<- ChanceNode$new("First-line therapy sucess?")
 
 #Create chance nodes for whether second-line therapy was successful in each scenario
-
+chance_node__OTS_then_ST <- ChanceNode$new("Second-line therapy sucess?")
+chance_node__ST_then_OTS <- ChanceNode$new("Second-line therapy sucess?")
+chance_node__ST_then_ST <- ChanceNode$new("Second-line therapy sucess?")
 
 #Create leaf nodes
 # (9 total. "1st line success", "2nd line success", and "IR needed" for each scenario)
 
+leaf_node_OTS_1success <- LeafNode$new("First-line therapy successful", utility = params$q_single_EGD)
+leaf_node_OTS_2success <- LeafNode$new("Second-line therapy successful", utility = params$q_double_EGD)
+leaf_node_OTS_ir_needed <- LeafNode$new("IR needed",  utility = params$q_IR)
+
+leaf_node_ST_first_1success <- LeafNode$new("First-line therapy successful",  utility = params$q_single_EGD)
+leaf_node_ST_first_2success <- LeafNode$new("Second-line therapy successful",  utility = params$q_double_EGD)
+leaf_node_ST_first_ir_needed <- LeafNode$new("IR needed",  utility = params$q_IR)
+
+leaf_node_ST_only_1success <- LeafNode$new("First-line therapy successful",  utility = params$q_single_EGD)
+leaf_node_ST_only_2success <- LeafNode$new("Second-line therapy successful",  utility = params$q_double_EGD)
+leaf_node_ST_pnly_ir_needed <- LeafNode$new("IR needed",  utility = params$q_IR)
+
 
 #Create 'actions', paths from your decision node(s).
+
+action_OTS <- Action$new(
+  decision_node, chance_node_OTS_first, cost = params$c_EGD_MD + params$c_OTSclip, label = "OTS clip First"
+)
+action_ST_first <- Action$new(
+  decision_node, chance_node_ST_first, cost = params$c_EGD_MD + params$c_STclip, label = "ST clip first"
+)
+action_ST_only <- Action$new(
+  decision_node, chance_node_ST_only, cost = params$c_EGD_MD + params$c_STclip, label = "ST clip only"
+)
 
 
 #Create 'reactions', paths from your chance node(s)
@@ -200,14 +229,46 @@ decision_node <- NA
 #  - Reactions for success after second-line therapy
 #  - Reactions for failure (IR needed) after second-line therapy
 
+
 #First line success:
+reaction_OTS_success <- Reaction$new(
+  chance_node_OTS_first, leaf_node_OTS_1success, 
+  p = 1-params$p_OTSc_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
+
+reaction_ST_first_success <- Reaction$new(
+  chance_node_ST_first, leaf_node_ST_first_1success, 
+  p = 1-params$p_ST_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
+
+reaction_ST_only_success <- Reaction$new(
+  chance_node_ST_only, leaf_node_ST_only_1success, 
+  p = 1-params$p_ST_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
 
 
 #First line failure:
+reaction_OTS_failure <- Reaction$new(
+  chance_node_OTS_first, chance_node__OTS_then_ST, 
+  p = params$p_OTSc_rebleed, cost = params$c_STclip, label = "Needed second line therapy")
 
+reaction_ST_first_failure <- Reaction$new(
+  chance_node_ST_first, chance_node__ST_then_OTS, 
+  p = params$p_ST_rebleed, cost = params$c_OTSclip, label = "Needed second line therapy")
+
+reaction_ST_only_failure <- Reaction$new(
+  chance_node_ST_only, chance_node__ST_then_ST, 
+  p = params$p_ST_rebleed, cost = params$c_STclip, label = "Needed second line therapy")
 
 #Second line success:
+reaction_OTS_then_ST_success <- Reaction$new(
+  chance_node_OTS_then_ST, leaf_node_OTS_2success, 
+  p = 1-params$p_OTSc_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
 
+reaction_ST_then_OTS_success <- Reaction$new(
+  chance_node_ST_then_OTS, leaf_node_ST_first_1success, 
+  p = 1-params$p_ST_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
+
+reaction_ST_then_ST_success <- Reaction$new(
+  chance_node_ST_only, leaf_node_ST_only_1success, 
+  p = 1-params$p_ST_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
 
 #Second line failure:
 
@@ -459,7 +520,7 @@ Comparing the net monetary benefit plot to your incremental analysis from the so
 
 # Last two questions
 
--   About how much time did you spend on the assignment? **Replace with your answer**
+-   About how much time did you spend on the assignment? **2 hours**
 
 -   Did you find any errors or have suggestions to improve it? **Replace with your answer**
 

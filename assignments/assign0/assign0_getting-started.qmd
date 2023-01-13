@@ -1,8 +1,9 @@
 ---
 title: "Assignment 0: Coding simple models"
-author: "YOUR NAME HERE"
+author: "Huzbah Jagirdar"
 format:
     html:
+      embed-resources: true
       toc: true
       embed-resources: true
 editor: visual
@@ -47,20 +48,33 @@ In the following code block, simulate a single instance of the Monty Hall proble
 
 ```{r}
 
+<<<<<<< Updated upstream
 # Randomly assign the prize to a door. Replace NA with a function that will return the number 1, 2, or 3 with equal probability. Hint: type '?sample' in the console
 prize <- NA
+=======
+# Randomly assign the prize to a door. Replace NA with a function that will return the number 1, 2, or 3 with equal probability. Hint: type ?sample in the console
+prize <- sample(c(1,2,3), 1, replace = FALSE)
+>>>>>>> Stashed changes
 
 # Randomly pick a door. Should also be 1, 2, or 3 with equal probability
-choice <- NA
+choice <- sample(c(1, 2,3), 1, replace = FALSE)
   
 # List Monty's options for which door to reveal. He cannot reveal your choice or the door with the car (could be the same door). Start with the list 1, 2, or 3, but then remove the option(s) corresponding to the prize and to your choice.
-monty_options <- NA
+monty_options <- c(1, 2, 3) 
 
+<<<<<<< Updated upstream
 # Randomly select one of the doors from Monty's options for him to reveal
 monty_reveal <- NA
 
 #Assign the variable optimal_choice with 'stay' if it's better to stay with your choice and with 'switch' if it's better to switch. Type '?ifelse' into the console for help.
 optimal_choice <- NA
+=======
+# Randomly select one of the doors in Monte's options for him to reveal
+monty_reveal <- monty_options[-c(choice,prize)]
+
+#Assign the variable optimal_choice with 'stay' if it's better to stay with your choice and with 'switch' if it's better to switch. Type ?ifelse into the console for help.
+optimal_choice <- ifelse(prize==choice, 'stay', 'switch')
+>>>>>>> Stashed changes
 
 # Check your output by printing each variable to the console. Rerun this whole code chunk multiple times and then look at the printed variables to make sure you see what you expect.
 print(c(
@@ -79,8 +93,11 @@ Monte Carlo simulations involve re-running a scenario over and over to estimate 
 #Inputs: none
 #Outputs: Optimal choice ("stay" or switch")
 monty_hall <- function() {
-  #Put some lines of code here
-  optimal_choice=NA #replace this with the proper code
+  prize <- sample(c(1,2,3), 1, replace = FALSE)
+choice <- sample(c(1, 2,3), 1, replace = FALSE)
+monty_options <- c(1, 2, 3) 
+monty_reveal <- monty_options[-c(choice,prize)]
+optimal_choice <- ifelse(prize==choice, 'stay', 'switch')
   return(optimal_choice)
 }
 
@@ -96,10 +113,9 @@ Now, we will repeat the simulation several times. If we run it enough times, the
 N_reps = 100000 #number of replications
 
 #create a vector of 'NA's of length N_reps. Hint: type ?rep into the console
-Sim_outcomes <- NA 
+Sim_outcomes <- rep(NA , N_reps)
 for(rep in 1:N_reps){
-  #Replace the rep'th entry of Sim_outcomes with the outcome of a monty_hall simulation
-  NA 
+  Sim_outcomes[rep]=monty_hall()
 }
 
 #Check your work by looking at the size of Sim_outcomes, the first 5 entries, and the last 5 entries
@@ -112,7 +128,7 @@ To calculate the probability you should switch, add up all of the replications i
 
 ```{r}
 #Count entries of Sim_outcomes where the optimal decision was "switch"
-N_switch <- NA
+N_switch <- sum('switch' == Sim_outcomes)
 
 P_switch_better <- N_switch / N_reps
 
@@ -135,7 +151,7 @@ p_switch_better <- c()
 
 for (N in sim_sizes){
   #Calculate the probability switching is better on the first N replications in the vector Sim_outcomes. Hint: can google 'subsetting vectors in R'
-  P_switch_better_subset <- 0#Repalce the 0
+  P_switch_better_subset <- sum('switch' == Sim_outcomes[1:N])/N
   #Append the result to p_est_switch_better
   p_switch_better <- c(p_switch_better, P_switch_better_subset)
 }
@@ -216,17 +232,17 @@ Let's solve the decision tree problem. To do so, we just need to assign numbers 
 ```{r}
 #Define the variables; replace NA with the proper values
 #The probability your initially selected door contains a car or a goat. Must sum to 1.
-p_car_initial = NA
+p_car_initial = 1/3
 p_goat_initial = 1 - p_car_initial
 #For outcome variables, use 1 if the decision results in winning the car and 0 otherwise.
-o_pick_car_then_stick = NA
-o_pick_car_then_switch = NA
-o_pick_goat_then_stick = NA
-o_pick_goat_then_switch = NA
+o_pick_car_then_stick = 1
+o_pick_car_then_switch = 0
+o_pick_goat_then_stick = 0
+o_pick_goat_then_switch = 1
 
 #Estimate the expected probability of each outcome depending on whether you stick or you switch. This is a simple calculation where each possible outcome under the decision is weighted by the probability of that outcome. Use the variables you just defined for this computation rather than typing numbers directly.
-p_car_if_stick = NA 
-p_car_if_switch = NA
+p_car_if_stick = p_car_initial*(o_pick_car_then_stick)+p_goat_initial*(o_pick_goat_then_stick)
+p_car_if_switch = p_goat_initial*(o_pick_goat_then_switch)+p_car_initial*(o_pick_car_then_switch)
 
 print(p_car_if_stick)
 
@@ -262,7 +278,7 @@ l_prms$p_S_to_H <- .02 #sick to healthy (recovering)
 l_prms$p_S_to_D <- .07 #sick to dead
 
 #Print l_prms to see the values
-l_prms
+print(l_prms)
 ```
 
 We're going to develop a Markov model, a simple and commonly-used cohort model. You'll learn a lot more about these later. For now, know that at each time step, individuals can transition from one state to another. Their probability of transitioning depends only on which state their currently in. We're going to use a for loop to develop the Markov model; later in the course we'll learn how a more efficient method that uses matrix multiplication.
@@ -279,15 +295,18 @@ First, we create the matrix where we track our cohort's transition between the h
 
 #This has errors. Fix it!
 m_cohort_trace <- matrix(data=as.integer(NA),
-                         nrow = 2,
+                         nrow = 31,
                          ncol = 3,
-                         dimnames = list("timestep"= 1:2,
-                                         "state"= c("H","S", "D")))
+                         dimnames = list(NULL,c("H","S", "D")))
 
 #Initiallize the first row
 #Insert the number of people who are initially 'H'ealthy, 'S'ick, and 'D'ead in the first row of the cohort trace.
 
-#TYPE YOUR CODE HERE
+
+m_cohort_trace[1,] <- c(l_prms$init_H, l_prms$init_S, l_prms$init_D)
+
+
+
 ```
 
 Each row of the cohort trace matrix corresponds to one timestep in our model. Next. we will loop over each of them and perform calculations that 'move' cohort members between the health states according to our transition probabilities. You should be able to derive these calculations using the following information:
@@ -312,11 +331,22 @@ for (i in 1:(dim(m_cohort_trace)[1]-1)){
     -1*m_cohort_trace[i, "H"]*l_prms$p_H_to_D#transitions out to D
   )
   #Sick state (H can go to S, S can go to H, S can go to D)
-  #YOUR CODE HERE
+   m_cohort_trace[i+1, "S"] <-(
+    m_cohort_trace[i, "S"]+#S at last timestep
+    m_cohort_trace[i, "H"]*l_prms$p_H_to_S+#transitions in from H
+    -1*m_cohort_trace[i, "S"]*l_prms$p_S_to_H+#transitions out to H
+    -1*m_cohort_trace[i, "S"]*l_prms$p_S_to_D#transitions out to D
+  )
   
   #Dead state (H can go to D, S can go to D, no resurrections)
-  #YOUR CODE HERE
+   m_cohort_trace[i+1, "D"] <-(
+    m_cohort_trace[i, "D"]+#H at last timestep
+    m_cohort_trace[i, "H"]*l_prms$p_H_to_D+#transitions in from H
+    m_cohort_trace[i, "S"]*l_prms$p_S_to_D#transitions out to D
+    
+  )
 }
+m_cohort_trace
 ```
 
 One property of Markov model is that the number of people is conserved at each timestep. No one 'escapes' the model. Therefore, summing across any row of the cohort trace matrix should give you the same value; the original cohort size. Try it.
@@ -326,6 +356,8 @@ One property of Markov model is that the number of people is conserved at each t
 # (if not, you have a mistake in your code)
 #HINT: ?rowSums()
 
+sums<-rowSums(m_cohort_trace)
+sums
 ```
 
 Next, we can plot the cohort trace to look at how our cohort transitions over time. You do not need to change anything here; if the preceding chunks are correct, running this chunk after them should produce the trace plot.
@@ -360,7 +392,41 @@ Now that we've gotten a model working, we will want to put it into a function to
 #Input: a list of model parameters
 #Output: cohort trace of the Markov model as a dataframe, which includes a column for timestep
 run_Markov_model <- function(l_prms){
-  #Code here
+
+  m_cohort_trace <- matrix(data=as.integer(NA),
+                         nrow = 31,
+                         ncol = 3,
+                         dimnames = list(NULL,c("H","S", "D")))
+
+  m_cohort_trace[1,] <- c(l_prms$init_H, l_prms$init_S, l_prms$init_D)
+  
+  for (i in 1:(dim(m_cohort_trace)[1]-1)){
+  # Healthy state (I've done it for you)
+  m_cohort_trace[i+1, "H"] <-(
+    m_cohort_trace[i, "H"]+#H at last timestep
+    m_cohort_trace[i, "S"]*l_prms$p_S_to_H+#transitions in from S
+    -1*m_cohort_trace[i, "H"]*l_prms$p_H_to_S+#transitions out to S
+    -1*m_cohort_trace[i, "H"]*l_prms$p_H_to_D#transitions out to D
+  )
+  #Sick state (H can go to S, S can go to H, S can go to D)
+   m_cohort_trace[i+1, "S"] <-(
+    m_cohort_trace[i, "S"]+#S at last timestep
+    m_cohort_trace[i, "H"]*l_prms$p_H_to_S+#transitions in from H
+    -1*m_cohort_trace[i, "S"]*l_prms$p_S_to_H+#transitions out to H
+    -1*m_cohort_trace[i, "S"]*l_prms$p_S_to_D#transitions out to D
+  )
+  
+  #Dead state (H can go to D, S can go to D, no resurrections)
+   m_cohort_trace[i+1, "D"] <-(
+    m_cohort_trace[i, "D"]+#H at last timestep
+    m_cohort_trace[i, "H"]*l_prms$p_H_to_D+#transitions in from H
+    m_cohort_trace[i, "S"]*l_prms$p_S_to_D#transitions out to D
+    
+  )
+  }
+  df_cohort_trace <- data.frame(m_cohort_trace)
+  df_cohort_trace$timestep <- seq(0, nrow(df_cohort_trace)-1)
+
   return(df_cohort_trace)
 }
 ```
@@ -375,19 +441,21 @@ l_prms_vaccine$p_H_to_S <- 0.01 #We changed one value (already done for you)
 
 #Deadlier variant
 #  probability of sick to dead is increased to 12%
-l_prms_deadlier <- NA
+l_prms_deadlier <- l_prms
+l_prms_deadlier$p_S_to_D<-0.12
 #IMPLEMENT THE CHANGE
 
 #Deadlier variant with vaccine
 #  probability of healthy to sick is 1%
 #  probability of sick to dead is 12%
-l_prms_deadlier_vaccine <- NA
+l_prms_deadlier_vaccine <- l_prms_deadlier
+l_prms_deadlier_vaccine$p_H_to_S<-0.01
 #IMPLEMENT THE TWO CHANGES
 
 #Now, use the function you created + the scenarios to create three additional Markov trace dataframes; one for each of the scenarios
-df_trace_vaccine <- NA
-df_trace_deadlier <- NA
-df_trace_deadlier_vaccine <- NA
+df_trace_vaccine <- run_Markov_model(l_prms_vaccine)
+df_trace_deadlier <- run_Markov_model(l_prms_deadlier)
+df_trace_deadlier_vaccine <-run_Markov_model(l_prms_deadlier_vaccine)
 
 #For plotting, we want to make a dataframe with all 4 scenarios (original + 3 new).
 # We want the data in long format, with two extra columns to define the scenario: variant (original or new) and vaccine (with vaccine, no vaccine).
@@ -402,10 +470,28 @@ df_scenarios <- cbind("variant" = "Original",
 
 #use rbind() to append each of the new scenarios
 # vaccine (original)
+df_scenarios<- rbind(cbind("variant" = "Original",
+                      "vaccine" = "Vaccine",
+                      tidyr::gather(df_trace_vaccine,
+                                      key = state,
+                                      value = count,
+                                      H:D)), df_scenarios)
 
 # variant (no vaccine)
+df_scenarios<- rbind(cbind("variant" = "Variant",
+                      "vaccine" = "No vaccine",
+                      tidyr::gather(df_trace_deadlier,
+                                      key = state,
+                                      value = count,
+                                      H:D)), df_scenarios)
 
 # variant (with vaccine)
+df_scenarios<- rbind(df_scenarios, cbind("variant" = "Variant",
+                      "vaccine" = "Vaccine",
+                      tidyr::gather(df_trace_deadlier_vaccine,
+                                      key = state,
+                                      value = count,
+                                      H:D)))
 
 
 #now we'll use facet_plot to make a plot with each scenario in a panel
@@ -424,27 +510,33 @@ Finally, compare the scenarios in terms of total deaths and deaths averted by th
 ```{r}
 #How many total deaths were there under each scenario
 total_deaths <- list(
-  original_variant_no_vac = NA,
-  original_variant_vaccine = NA,
-  new_variant_no_vac = NA,
-  new_variant_vaccine = NA
+  original_variant_no_vac = df_cohort_trace[31, 3],
+  original_variant_vaccine = df_trace_vaccine[31,3],
+  new_variant_no_vac = df_trace_deadlier[31,3],
+  new_variant_vaccine = df_trace_deadlier_vaccine[31,3]
 )
 total_deaths
 
 #How many deaths does the vaccine avert with the original variant?
 # (Compute it from the variables in the total_deaths list)
+vac_deaths_averted_org<-total_deaths$original_variant_no_vac-total_deaths$original_variant_vaccine 
+
+print(vac_deaths_averted_org)
 
 #How many deaths does the vaccine avert with the new variant?
 # (Compute it from the variables in the total_deaths list)
+vac_deaths_averted_var<-total_deaths$new_variant_no_vac
+-total_deaths$new_variant_vaccine 
 
+print(vac_deaths_averted_var)
 ```
 
 If you've completed this assignment, you've already gotten exposed to lots of important concepts from the class (decision trees, simulation, Markov cohort models, policy analysis). Congrats!
 
 ## Last two questions
 
--   About how much time did you spend on the assignment? **Replace with your answer**
+-   About how much time did you spend on the assignment? 1 hour
 
--   Did you find any errors or have suggestions to improve it? **Replace with your answer**
+-   Did you find any errors or have suggestions to improve it?
 
 Fin.
