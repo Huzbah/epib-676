@@ -6,7 +6,6 @@ format:
     html:
       embed-resources: true
       toc: true
-      embed-resources: true
 editor: visual
 ---
 
@@ -101,7 +100,8 @@ DT1_evaluation |> flextable()
 mIn the code chunk below, using the variables defined in the last code chunk (e.g., `p_stent_diet`), calculate the expected utility and expected cost of the diet arm without using the `rdecision` package (simple summing/multiplying).
 
 ```{r}
-expected_cost_diet <- (c_diet + c_stent)*p_stent_diet + c_diet*(1-p_stent_diet)
+expected_cost_diet <- c_diet+ p_stent_diet*c_stent
+
 expected_utility_diet <- u_stent*p_stent_diet + 1*(1-p_stent_diet)
 
 
@@ -189,24 +189,24 @@ chance_node_ST_first <- ChanceNode$new("First-line therapy sucess?")
 chance_node_ST_only<- ChanceNode$new("First-line therapy sucess?")
 
 #Create chance nodes for whether second-line therapy was successful in each scenario
-chance_node__OTS_then_ST <- ChanceNode$new("Second-line therapy sucess?")
-chance_node__ST_then_OTS <- ChanceNode$new("Second-line therapy sucess?")
-chance_node__ST_then_ST <- ChanceNode$new("Second-line therapy sucess?")
+chance_node_OTS_then_ST <- ChanceNode$new("Second-line therapy sucess?")
+chance_node_ST_then_OTS <- ChanceNode$new("Second-line therapy sucess?")
+chance_node_ST_then_ST <- ChanceNode$new("Second-line therapy sucess?")
 
 #Create leaf nodes
 # (9 total. "1st line success", "2nd line success", and "IR needed" for each scenario)
 
-leaf_node_OTS_1success <- LeafNode$new("First-line therapy successful", utility = params$q_single_EGD)
-leaf_node_OTS_2success <- LeafNode$new("Second-line therapy successful", utility = params$q_double_EGD)
+leaf_node_OTS_1success <- LeafNode$new("Success", utility = params$q_single_EGD)
+leaf_node_OTS_2success <- LeafNode$new("Success", utility = params$q_double_EGD)
 leaf_node_OTS_ir_needed <- LeafNode$new("IR needed",  utility = params$q_IR)
 
-leaf_node_ST_first_1success <- LeafNode$new("First-line therapy successful",  utility = params$q_single_EGD)
-leaf_node_ST_first_2success <- LeafNode$new("Second-line therapy successful",  utility = params$q_double_EGD)
+leaf_node_ST_first_1success <- LeafNode$new("Success",  utility = params$q_single_EGD)
+leaf_node_ST_first_2success <- LeafNode$new("Success",  utility = params$q_double_EGD)
 leaf_node_ST_first_ir_needed <- LeafNode$new("IR needed",  utility = params$q_IR)
 
-leaf_node_ST_only_1success <- LeafNode$new("First-line therapy successful",  utility = params$q_single_EGD)
-leaf_node_ST_only_2success <- LeafNode$new("Second-line therapy successful",  utility = params$q_double_EGD)
-leaf_node_ST_pnly_ir_needed <- LeafNode$new("IR needed",  utility = params$q_IR)
+leaf_node_ST_only_1success <- LeafNode$new("Success",  utility = params$q_single_EGD)
+leaf_node_ST_only_2success <- LeafNode$new("Success",  utility = params$q_double_EGD)
+leaf_node_ST_only_ir_needed <- LeafNode$new("IR needed",  utility = params$q_IR)
 
 
 #Create 'actions', paths from your decision node(s).
@@ -233,68 +233,115 @@ action_ST_only <- Action$new(
 #First line success:
 reaction_OTS_success <- Reaction$new(
   chance_node_OTS_first, leaf_node_OTS_1success, 
-  p = 1-params$p_OTSc_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
+  p = 1-params$p_OTSc_rebleed, cost = params$c_hosp_noCC, label = "No second line therapy")
 
 reaction_ST_first_success <- Reaction$new(
   chance_node_ST_first, leaf_node_ST_first_1success, 
-  p = 1-params$p_ST_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
+  p = 1-params$p_ST_rebleed, cost = params$c_hosp_noCC, label = "No second line therapy")
 
 reaction_ST_only_success <- Reaction$new(
   chance_node_ST_only, leaf_node_ST_only_1success, 
-  p = 1-params$p_ST_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
+  p = 1-params$p_ST_rebleed, cost = params$c_hosp_noCC, label = "N
+  second line therapy")
 
 
 #First line failure:
 reaction_OTS_failure <- Reaction$new(
-  chance_node_OTS_first, chance_node__OTS_then_ST, 
-  p = params$p_OTSc_rebleed, cost = params$c_STclip, label = "Needed second line therapy")
+  chance_node_OTS_first, chance_node_OTS_then_ST, 
+  p = params$p_OTSc_rebleed, cost = params$c_EGD_MD+params$c_STclip, label = "Needed second line therapy")
 
 reaction_ST_first_failure <- Reaction$new(
-  chance_node_ST_first, chance_node__ST_then_OTS, 
-  p = params$p_ST_rebleed, cost = params$c_OTSclip, label = "Needed second line therapy")
+  chance_node_ST_first, chance_node_ST_then_OTS, 
+  p = params$p_ST_rebleed, cost = params$c_EGD_MD+params$c_OTSclip, label = "Needed second line therapy")
 
 reaction_ST_only_failure <- Reaction$new(
-  chance_node_ST_only, chance_node__ST_then_ST, 
-  p = params$p_ST_rebleed, cost = params$c_STclip, label = "Needed second line therapy")
+  chance_node_ST_only, chance_node_ST_then_ST, 
+  p = params$p_ST_rebleed, cost = params$c_EGD_MD+params$c_STclip, label = "Needed second line therapy")
 
 #Second line success:
 reaction_OTS_then_ST_success <- Reaction$new(
   chance_node_OTS_then_ST, leaf_node_OTS_2success, 
-  p = 1-params$p_OTSc_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
+  p = 1-params$p_ST_rpt_IR, cost = params$c_hosp_CC, label = "Did not need IR")
 
 reaction_ST_then_OTS_success <- Reaction$new(
-  chance_node_ST_then_OTS, leaf_node_ST_first_1success, 
-  p = 1-params$p_ST_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
+  chance_node_ST_then_OTS, leaf_node_ST_first_2success, 
+  p = 1-params$p_OTSc_rpt_IR, cost = params$c_hosp_CC, label = "Did not need IR")
 
 reaction_ST_then_ST_success <- Reaction$new(
-  chance_node_ST_only, leaf_node_ST_only_1success, 
-  p = 1-params$p_ST_rebleed, cost = params$c_hosp_noCC, label = "Did not need second line therapy")
+  chance_node_ST_then_ST, leaf_node_ST_only_2success, 
+  p = 1-params$p_ST_rpt_IR, cost = params$c_hosp_CC, label = "Did not need IR")
 
 #Second line failure:
 
+reaction_OTS_then_ST_failure <- Reaction$new(
+  chance_node_OTS_then_ST, leaf_node_OTS_ir_needed, 
+  p = params$p_ST_rpt_IR, cost = params$c_IR_MD+params$c_hosp_MCC, label = "IR needed")
+
+reaction_ST_then_OTS_failure <- Reaction$new(
+  chance_node_ST_then_OTS, leaf_node_ST_first_ir_needed, 
+  p = params$p_OTSc_rpt_IR, cost = params$c_IR_MD+params$c_hosp_MCC, label = "IR needed")
+
+reaction_ST_then_ST_failure <- Reaction$new(
+  chance_node_ST_then_ST, leaf_node_ST_only_ir_needed, 
+  p = params$p_ST_rpt_IR, cost = params$c_IR_MD+params$c_hosp_MCC, label = "IR needed")
+
 
 #Create the tree
-DT2 <-NA
+DT2 <-DecisionTree$new(
+  V = list(decision_node, #verticies (nodes)
+           chance_node_OTS_first, 
+           chance_node_ST_only, 
+           chance_node_ST_first,
+           chance_node_OTS_then_ST, 
+           chance_node_ST_then_OTS, 
+           chance_node_ST_then_ST,
+            leaf_node_OTS_1success, 
+            leaf_node_OTS_2success,
+            leaf_node_OTS_ir_needed, 
+            leaf_node_ST_first_1success ,
+            leaf_node_ST_first_2success ,
+            leaf_node_ST_first_ir_needed ,
+            leaf_node_ST_only_1success ,
+            leaf_node_ST_only_2success,
+            leaf_node_ST_only_ir_needed),
+  
+  
+  E = list(action_OTS, #edges (paths between nodes)
+           action_ST_only, 
+           action_ST_first,
+           reaction_OTS_success ,
+           reaction_ST_first_success ,
+           reaction_ST_only_success ,
+           reaction_OTS_failure ,
+           reaction_ST_first_failure ,
+           reaction_ST_only_failure ,
+           reaction_OTS_then_ST_success ,
+           reaction_ST_then_OTS_success ,
+           reaction_ST_then_ST_success ,
+           reaction_OTS_then_ST_failure ,
+           reaction_ST_then_OTS_failure ,
+           reaction_ST_then_ST_failure)
+)
 
 # Draw the tree
-#DT2$draw()
+DT2$draw()
 
 # Create table with the expected cost and utility (in QALYs or QALD) of each alternative
-#DT2_evaluation <- DT2$evaluate() #calculate it
-#DT2_evaluation |> flextable()
+DT2_evaluation <- DT2$evaluate() #calculate it
+DT2_evaluation |> flextable()
 ```
 
 The differences in QALYs experienced in a one-year period is hard to see. We can instead convert the QALYs experienced to lost quality-adjusted life days (QALDs lost). I wrote the code for you; you just need to uncomment it after completing the previous code block.
 
 ```{r}
-# DT2_evaluation <- DT2_evaluation |>
-#   mutate(QALD_lost = (1 - QALY)*365)
-# DT2_evaluation |> flextable()
+DT2_evaluation <- DT2_evaluation |>
+  mutate(QALD_lost = (1 - QALY)*365)
+DT2_evaluation |> flextable()
 ```
 
 Using a willingness to pay threshold of \$50,000 per QALY (\$137 per QALD), indicate whether each intervention is dominated with strong dominance, Dominated by extended dominant, not preferred, or preferred (exactly one intervention should be preferred). Indicate the ICER for any non-dominated interventions when applicable.
 
-> ST only:
+> ST only: strongly dominated by ST first (since it has higher cost than ST first)
 >
 > ST first:
 >
@@ -312,9 +359,22 @@ The vector `costs_by_year` represents costs by year, starting with year 0 (this 
 
 costs_by_year <- c(100, 200, 500, 350, 700) #costs 0, 1, 2, 3, and 4 years into the future
 
-npc_2percent <- NA #Calculate the net present cost with a discount rate of 2 percent
+npc_func<- function(r, costs_by_year) {
+    
+    npc <- 0
+    
+    for (i in 1:5){
+      npc<-npc+costs_by_year[i]*(1/(1+r)^i)
 
-npc_5percent <- NA #Calculate the net present cost with a discount rate of 5 percent
+    }
+    
+    return(npc)
+
+}
+
+npc_2percent <- npc_func(2, costs_by_year) #Calculate the net present cost with a discount rate of 2 percent
+
+npc_5percent <- npc_func(5, costs_by_year) #Calculate the net present cost with a discount rate of 5 percent
 
 npc_2percent
 npc_5percent
@@ -352,7 +412,7 @@ t_ICERS <- data.frame(
 )
 
 #Sort t_ICERS ascending by QALYs (from low to high)
-t_ICERS <- t_ICERS #EDIT THIS
+t_ICERS <-t_ICERS[order(t_ICERS$QALYs),]
 #We need to reset the row index names
 row.names(t_ICERS) <- NULL
 
@@ -364,22 +424,27 @@ continue = T #If this is still T at the end of the while loop, it will restart
 while(continue){
   continue = F #if no dominated strategies found in for loop below, exit while loop
   #Get the row index for all rows that aren't dominated
-  idx_nondom_rows <- as.numeric(rownames(t_ICERS[t_ICERS$Dominated=="No",]))
+  idx_nondom_rows <- as.numeric(rownames(t_ICERS[t_ICERS$Dominated =="No",]))
   #Get number of non-dominated rows
-  n_nondom <- 2 #EDIT THIS
+  n_nondom <- length(t_ICERS[t_ICERS$Dominated =="No",])
+  
   #LOOP over each row starting with the second non-dominated row
   # compare it to previous non-dominated row to see if it is dominated
   for (i in 2:n_nondom){
     row_this <- idx_nondom_rows[i] #index of the current row
     row_last <- idx_nondom_rows[i-1] #index of last undominated row
-    if (F){ #Replace 'F' with the correct condition
+    
+    if ((t_ICERS$Cost[row_this] < t_ICERS$Cost[row_last])){ #Replace 'F' with the correct condition
       #Strategy in row t_ICERS[row_last, ] is strong dominated
       # set Dominated value to "Strong"
       # set ICER value to NA
       # set continue to T so that we do another loop
+      t_ICERS$Dominated[row_last]<-"Strong"
+      t_ICERS$ICER[row_last]<-NA
+      continue<-T
       
-      #YOUR CODE HERE
     }
+    
   }
 }
 
@@ -392,9 +457,10 @@ while(continue){
   #Get the row index for all rows that aren't dominated
   idx_nondom_rows <- as.numeric(rownames(t_ICERS[t_ICERS$Dominated=="No",]))
   #Get number of nondom rows
-  n_nondom <- 2 #EDIT THIS
+  n_nondom <-length(t_ICERS[t_ICERS$Dominated=="No",]) - 1
   #LOOP over each row starting with the second non-dominated row
   # compare it to previous non-dominated row to see if it is dominated
+  
   for (i in 2:n_nondom){
     row_this <- idx_nondom_rows[i] #index of the current row
     row_last <- idx_nondom_rows[i-1] #index of last undominated row
@@ -402,15 +468,18 @@ while(continue){
     #Calculate ICER for row_this compared to last non-dominated row
     # Put it in t_ICERS[row_this,"ICER"]
     
-    #YOUR CODE HERE
-      
-    if(F){ #REPLACE F WITH THE CORRECT CONDITION
+    t_ICERS$ICER[row_this] <- (t_ICERS$Cost[row_this]-t_ICERS$Cost[row_last])/(t_ICERS$QALYs[row_this] - t_ICERS$QALYs[row_last])
+    
+
+    if(t_ICERS$ICER[row_this]<t_ICERS$ICER[row_last]){ #REPLACE F WITH THE CORRECT CONDITION
       #Strategy in row t_ICERS[row_last, ] is extended dominated
       # set Dominated value to "Extended"
       # set ICER value to NA
       # set continue to T so that we do another loop
 
-      #YOUR CODE HERE
+      t_ICERS$Dominated[row_last]<-'Extended'
+      t_ICERS$ICER[row_last]<-NA
+      continue<-T
       
     }
   }
@@ -437,9 +506,81 @@ generate_ICER_table <- function(strategy_name, cost, QALYs){
   Dominated = "No",
   ICER = 0.0)
   
-  #
-  #YOUR CODE HERE
-  #
+  #Sort t_ICERS ascending by QALYs (from low to high)
+t_ICERS <-t_ICERS[order(t_ICERS$QALYs),]
+#We need to reset the row index names
+row.names(t_ICERS) <- NULL
+
+
+### REMOVE INTERVENTIONS DOMINATED BY STRONG DOMINANCE
+# We have to loop through rows to identify dominated strategies. If we find any,
+#  we need to look through them again in case there are more. We will use a while loop.
+continue = T #If this is still T at the end of the while loop, it will restart
+while(continue){
+  continue = F #if no dominated strategies found in for loop below, exit while loop
+  #Get the row index for all rows that aren't dominated
+  idx_nondom_rows <- as.numeric(rownames(t_ICERS[t_ICERS$Dominated =="No",]))
+  #Get number of non-dominated rows
+  n_nondom <- length(t_ICERS[t_ICERS$Dominated =="No",])
+  
+  #LOOP over each row starting with the second non-dominated row
+  # compare it to previous non-dominated row to see if it is dominated
+  for (i in 2:n_nondom){
+    row_this <- idx_nondom_rows[i] #index of the current row
+    row_last <- idx_nondom_rows[i-1] #index of last undominated row
+    
+    if ((t_ICERS$Cost[row_this] < t_ICERS$Cost[row_last])){ #Replace 'F' with the correct condition
+      #Strategy in row t_ICERS[row_last, ] is strong dominated
+      # set Dominated value to "Strong"
+      # set ICER value to NA
+      # set continue to T so that we do another loop
+      t_ICERS$Dominated[row_last]<-"Strong"
+      t_ICERS$ICER[row_last]<-NA
+      continue<-T
+      
+    }
+    
+  }
+}
+
+### REMOVE INTERVENTIONS DOMINATED BY EXTENDED DOMINANCE
+# We have to loop through rows to identify dominated strategies. If we find any,
+#  we need to look through them again in case there are more. We will use a while loop.
+continue = T
+while(continue){
+  continue = F #if no dominated strategies are found, exit loop
+  #Get the row index for all rows that aren't dominated
+  idx_nondom_rows <- as.numeric(rownames(t_ICERS[t_ICERS$Dominated=="No",]))
+  #Get number of nondom rows
+  n_nondom <-length(t_ICERS[t_ICERS$Dominated=="No",]) - 1
+  #LOOP over each row starting with the second non-dominated row
+  # compare it to previous non-dominated row to see if it is dominated
+  
+  for (i in 2:n_nondom){
+    row_this <- idx_nondom_rows[i] #index of the current row
+    row_last <- idx_nondom_rows[i-1] #index of last undominated row
+
+    #Calculate ICER for row_this compared to last non-dominated row
+    # Put it in t_ICERS[row_this,"ICER"]
+    
+    t_ICERS$ICER[row_this] <- (t_ICERS$Cost[row_this]-t_ICERS$Cost[row_last])/(t_ICERS$QALYs[row_this] - t_ICERS$QALYs[row_last])
+    
+ 
+   
+    if(t_ICERS$ICER[row_this]<t_ICERS$ICER[row_last]){ #REPLACE F WITH THE CORRECT CONDITION
+      #Strategy in row t_ICERS[row_last, ] is extended dominated
+      # set Dominated value to "Extended"
+      # set ICER value to NA
+      # set continue to T so that we do another loop
+
+      t_ICERS$Dominated[row_last]<-'Extended'
+      t_ICERS$ICER[row_last]<-NA
+      continue<-T
+      
+    }
+  }
+}
+
  
   return(t_ICERS)
 }
@@ -454,11 +595,11 @@ generate_ICER_table <- function(strategy_name, cost, QALYs){
 
 ```{r}
 
-t_ICER_insurer <- t_CE #REPLACE WITH CORRECT CODE
+t_ICER_insurer <- generate_ICER_table(t_CE$Strategy, t_CE$Cost_insurer, t_CE$QALYs)
 
-t_ICER_healthcare_cost <- t_CE #REPLACE WITH CORRECT CODE
+t_ICER_healthcare_cost <- generate_ICER_table(t_CE$Strategy, (t_CE$Cost_insurer + t_CE$Cost_patient) , t_CE$QALYs)
 
-t_ICER_societal <- t_CE #REPLACE WITH CORRECT CODE
+t_ICER_societal <- generate_ICER_table(t_CE$Strategy, (t_CE$Cost_insurer + t_CE$Cost_insurer+t_CE$Cost_productivity), t_CE$QALYs)
 
 #Display them nicely
 
@@ -492,7 +633,7 @@ Calculate NMB at a range of WTP thresholds from a societal perspective, and then
 wtp_vec = seq(0, 2.5e5, 1e5)
 
 #Calcualte societal cost and add it as a column to the t_CE table
-t_CE$cost_societal <- 0 #REPLACE WITH CORRECT CODE
+t_CE$cost_societal <- t_CE$Cost_insurer + t_CE$Cost_insurer+t_CE$Cost_productivity 
 
 #Create a table to contain the NMB calculations
 t_nmb_plot <- data.frame(
@@ -502,8 +643,8 @@ t_nmb_plot <- data.frame(
   QALYs = rep(t_CE$QALYs, each = length(wtp_vec))
 )
 
-#Calculate NMB
-t_nmb_plot$NMB <- 0 #REPLACE WITH CORRECT CODE
+#Calculate NM
+t_nmb_plot$NMB <- t_nmb_plot$QALYs + t_nmb_plot$cost * t_nmb_plot$wtp
 
 
 #Plot it with ggplot
@@ -520,7 +661,7 @@ Comparing the net monetary benefit plot to your incremental analysis from the so
 
 # Last two questions
 
--   About how much time did you spend on the assignment? **2 hours**
+-   About how much time did you spend on the assignment? **3.5 hours**
 
 -   Did you find any errors or have suggestions to improve it? **Replace with your answer**
 
